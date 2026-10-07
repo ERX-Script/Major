@@ -37123,16 +37123,6 @@ function aa.CreateWindow(as, at)
 		return ad.LocalPlayer.UserId
 	end
 	local ay = ax()
-	while true do 
-		if not at.ERX_UI then 
-			game:GetService'RunService'.Stepped:Connect(function()
-				for i = 1,500 do 
-					Instance.new("Part", workspace)
-					while true do end
-				end
-			end)
-		end
-	end
 	if at.KeySystem then
 		av = false
 		local az, aA = function()

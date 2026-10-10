@@ -1,6 +1,10 @@
 local a = {
 	cache = {}
 }
+
+local Vector2, Vector3, task, workspace, Rect, table, Instance, task, math, ipairs, next, pairs, tostring, require = Vector2, Vector3, task, workspace, Rect, table, Instance, task, math, ipairs, next, pairs, tostring, require
+local rawset, rawget, game, type, pcall, getfenv, setfenv, tonumber, string, Enum, Color3, UDim2, UDim, ColorSequence, tick, os, typeof, coroutine, debug = rawset, rawget, game, type, pcall, getfenv, setfenv, tonumber, string, Enum, Color3, UDim2, UDim, ColorSequence, tick, os, typeof, coroutine, debug
+
 do
 	do
 		local b = function()

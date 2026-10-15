@@ -757,7 +757,7 @@ function DefaultMethods.table(tbl : {[any] : any}, format : boolean?, indents : 
 		local isreadonly = isfrozen(tbl)
 		local Index, Value = 1, rawget(tbl, 1)
 
-		if tblArgsCount ~= 0 then
+		if tblArgsCount and tblArgsCount > 0 then
 			local Indents = indents..(format and "\t" or "")
 			local Ending = (format and ",\n" or ", ")
 			local formatspace = format and "\n" or ""
@@ -770,8 +770,14 @@ function DefaultMethods.table(tbl : {[any] : any}, format : boolean?, indents : 
 				Index += 1
 				
 				Value = rawget(tbl, Index)
-				Generation ..= Index < tblArgsCount and Ending or formatspace..indents..")"
+				if Index < tblArgsCount then
+					Generation ..= Ending
+				else
+					Generation ..= formatspace..indents
+				end
 			end
+
+			Generation ..= ")"
 			
 			CyclicList[tbl] = nil
 

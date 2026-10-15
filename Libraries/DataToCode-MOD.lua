@@ -750,45 +750,45 @@ do
 end
 
 function DefaultMethods.table(tbl : {[any] : any}, format : boolean?, indents : string, CyclicList : typeof(setmetatable({}, {__mode = "k"}))?, InComment : boolean?)
-	local CyclicList = CyclicList or setmetatable({}, {__mode = "k"})
+	-- No shadows the parameter; reuse the incoming cycle list if provided
+	CyclicList = CyclicList or setmetatable({}, {__mode = "k"})
 
-	if not CyclicList[tbl] then
-		local tblArgsCount = tbl.n or rawlen(tbl)
-		local isreadonly = isfrozen(tbl)
-		local Index, Value = 1, rawget(tbl, 1)
-
-		if tblArgsCount and tblArgsCount > 0 then
-			local Indents = indents..(format and "\t" or "")
-			local Ending = (format and ",\n" or ", ")
-			local formatspace = format and "\n" or ""
-			local Generation = "table.pack("..formatspace
-
-			CyclicList[tbl] = true
-			
-			while Index < tblArgsCount do
-				Generation ..= Indents..Serialize(Value, format, Indents, CyclicList, InComment)
-				Index += 1
-				
-				Value = rawget(tbl, Index)
-				if Index < tblArgsCount then
-					Generation ..= Ending
-				else
-					Generation ..= formatspace..indents
-				end
-			end
-
-			Generation ..= ")"
-			
-			CyclicList[tbl] = nil
-
-			return not isreadonly and Generation or "table.freeze("..Generation..")"
-		end
-
-		local Base = "table.pack()"
-		return not isreadonly and Base or "table.freeze(".. Base ..")"
-	else
+	-- Guard first: cycle detection
+	if CyclicList[tbl] then
 		return "*** cycle table reference detected ***" -- I am NOT supporting cyclic tables as its a huge pain
 	end
+
+	local tblArgsCount = tbl.n or rawlen(tbl)
+	local isreadonly = isfrozen(tbl)
+
+	-- Non-array / empty table -> table.pack()
+	if not tblArgsCount or tblArgsCount <= 0 then
+		local Base = "table.pack()"
+		return not isreadonly and Base or "table.freeze(" .. Base .. ")"
+	end
+
+	local Indents    = indents .. (format and "\t" or "")
+	local Ending     = format and ",\n" or ", "
+	local formatspace = format and "\n" or ""
+	local Generation = "table.pack(" .. formatspace
+
+	-- Mark BEFORE recursing so shared/cyclic children see it
+	CyclicList[tbl] = true
+
+	-- Include the LAST index (<=). The original `<` skipped it.
+	for Index = 1, tblArgsCount do
+		local Value = rawget(tbl, Index)
+		Generation ..= Indents .. Serialize(Value, format, Indents, CyclicList, InComment)
+		
+		Generation ..= ((Index < tblArgsCount and Ending) or (formatspace .. indents))
+	end
+
+	Generation ..= ")"
+
+	-- Always clear the marker so shared (non-cyclic) tables can be re-serialized
+	CyclicList[tbl] = nil
+
+	return not isreadonly and Generation or "table.freeze(" .. Generation .. ")"
 end
 
 DefaultMethods["nil"] = function()

@@ -757,7 +757,7 @@ function DefaultMethods.table(tbl : {[any] : any}, format : boolean?, indents : 
 		local isreadonly = isfrozen(tbl)
 		local Index, Value = 1, rawget(tbl, 1)
 
-		if Index ~= nil then
+		if tblArgsCount ~= 0 then
 			local Indents = indents..(format and "\t" or "")
 			local Ending = (format and ",\n" or ", ")
 			local formatspace = format and "\n" or ""
@@ -778,7 +778,8 @@ function DefaultMethods.table(tbl : {[any] : any}, format : boolean?, indents : 
 			return not isreadonly and Generation or "table.freeze("..Generation..")"
 		end
 
-		return not isreadonly and "{}" or "table.freeze({})"
+		local Base = "table.pack()"
+		return not isreadonly and Base or "table.freeze(".. Base ..")"
 	else
 		return "*** cycle table reference detected ***" -- I am NOT supporting cyclic tables as its a huge pain
 	end

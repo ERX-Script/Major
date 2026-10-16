@@ -749,7 +749,7 @@ do
 	end
 end
 
-function DefaultMethods.table(tbl : {[any] : any}, format : boolean?, indents : string, CyclicList : typeof(setmetatable({}, {__mode = "k"}))?, InComment : boolean?)
+local function tableWithPack(tbl : {[any] : any}, format : boolean?, indents : string, CyclicList : typeof(setmetatable({}, {__mode = "k"}))?, InComment : boolean?)
 	-- No shadows the parameter; reuse the incoming cycle list if provided
 	CyclicList = CyclicList or setmetatable({}, {__mode = "k"})
 
@@ -779,7 +779,7 @@ function DefaultMethods.table(tbl : {[any] : any}, format : boolean?, indents : 
 	for Index = 1, tblArgsCount do
 		local Value = rawget(tbl, Index)
 		Generation ..= Indents .. Serialize(Value, format, Indents, CyclicList, InComment)
-		
+
 		Generation ..= ((Index < tblArgsCount and Ending) or (formatspace .. indents))
 	end
 
@@ -789,6 +789,42 @@ function DefaultMethods.table(tbl : {[any] : any}, format : boolean?, indents : 
 	CyclicList[tbl] = nil
 
 	return not isreadonly and Generation or "table.freeze(" .. Generation .. ")"
+end
+
+function DefaultMethods.table(tbl : {[any] : any}, format : boolean?, indents : string, CyclicList : typeof(setmetatable({}, {__mode = "k"}))?, InComment : boolean?)
+	local CyclicList = CyclicList or setmetatable({}, {__mode = "k"})
+
+	if not CyclicList[tbl] then
+		local isreadonly = isfrozen(tbl)
+		if rawget(tbl, "n") and type(tbl.n) == "number" then
+			return tableWithPack(tbl, format, indents, CyclicList, InComment)
+		end
+		
+		local Index, Value = next(tbl)
+
+		if Index ~= nil then
+			local Indents = indents..(format and "\t" or "")
+			local Ending = (format and ",\n" or ", ")
+			local formatspace = format and "\n" or ""
+			local Generation = "{"..formatspace
+			local CurrentIndex = 1
+
+			CyclicList[tbl] = true
+			repeat
+				Generation ..= Indents..(CurrentIndex ~= Index and ValidateIndex(Index) or "")..Serialize(Value, format, Indents, CyclicList, InComment)
+				Index, Value = next(tbl, Index)
+				Generation ..= Index ~= nil and Ending or formatspace..indents.."}"
+				CurrentIndex += 1
+			until Index == nil
+			CyclicList[tbl] = nil
+
+			return not isreadonly and Generation or "table.freeze("..Generation..")"
+		end
+
+		return not isreadonly and "{}" or "table.freeze({})"
+	else
+		return "*** cycle table reference detected ***" -- I am NOT supporting cyclic tables as its a huge pain
+	end
 end
 
 DefaultMethods["nil"] = function()
